@@ -39,6 +39,9 @@ class CalculatorController:
             self.view.update_result(f"Error: {error}")
         else:
             self.view.update_result(result)
+            # if the calculation was a success, update the history
+            history_log = self.model.get_history()
+            self.view.update_history(history_log)
         
         # show the expression that was just calculated
         self.view.update_expression(self.model.history + "=")
@@ -49,6 +52,8 @@ class CalculatorController:
         self.model.clear()
         self.view.update_expression("")
         self.view.update_result("")
+        # also clear the history display
+        self.view.update_history([])
         self._disable_edit_mode()
 
     # handles keys when the main window is focused

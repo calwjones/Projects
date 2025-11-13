@@ -10,6 +10,10 @@ class CalculatorModel:
         self.has_result = False
         # operator precedence for the shunting-yard algorithm
         self.precedence = {'+': 1, '-': 1, '*': 2, '/': 2, '%': 2}
+        
+        # stores the calculation history
+        self.history_log = []
+        self.MAX_HISTORY = 10 # sets how many entries to remember
 
     # turns the input string into a list of tokens
     def _tokenize(self, expression_str):
@@ -110,6 +114,10 @@ class CalculatorModel:
         else:
             raise CalculatorError("Invalid syntax")
 
+    # allows the controller to get the history
+    def get_history(self):
+        return self.history_log
+
     # adds a character to the expression
     def append_char(self, char):
         if self.has_result:
@@ -130,6 +138,8 @@ class CalculatorModel:
         self.expression = ""
         self.history = ""
         self.has_result = False
+        # also clear the history log
+        self.history_log.clear()
 
     # the main evaluation function
     def evaluate(self):
@@ -155,6 +165,12 @@ class CalculatorModel:
             if abs(total) > 1e12 or (abs(total) < 1e-6 and total != 0):
                 total_str = f"{total:.4g}"
             
+            # add the calculation to our history log
+            history_entry = f"{self.history} = {total_str}"
+            self.history_log.append(history_entry)
+            if len(self.history_log) > self.MAX_HISTORY:
+                self.history_log.pop(0) # remove the oldest entry
+
             self.expression = total_str
             self.has_result = True
             return (total_str, None)

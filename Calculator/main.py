@@ -1,15 +1,15 @@
 import tkinter as tk
 from controller import CalculatorController
 
-if __name__ == "__main__":
-    # create the main window
-    root = tk.Tk()
-    root.title("Python Calculator")
-    root.geometry("380x540")
-    root.resizable(False, False)
+if __name__ == '__main__':
+    # setup the main window
+    main_window = tk.Tk()
+    main_window.title("Python Calculator")
     
-    # create the controller, which initializes the model and view
-    app = CalculatorController(root)
+    # let tkinter size the window automatically
+    main_window.resizable(False, False)
     
-    # start the application
-    root.mainloop()
+    # create and run the app
+    app = CalculatorController(main_window)
+    main_window.mainloop()
+
