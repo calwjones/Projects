@@ -6,183 +6,179 @@ class CalculatorView:
     def __init__(self, root, controller):
         self.root = root
         self.controller = controller
+        self.is_sci = False 
         
-        # styling constants
-        self.BG_COLOR = "#1e1e1e"
-        self.DISPLAY_BG_COLOR = "#2e2e2e"
-        self.BUTTON_BG_COLOR = "#404040"
-        self.OPERATOR_BG_COLOR = "#ff9f0a"
-        self.TEXT_COLOR = "#ffffff"
-        self.HISTORY_TEXT_COLOR = "#a0a0a0"
-        self.MAIN_FONT = ('Arial', 18)
-        self.RESULT_FONT = ('Arial', 24, "bold")
-        self.EXPRESSION_FONT = ('Arial', 16)
-        self.HISTORY_FONT = ('Arial', 10)
+        # design system
+        self.colors = {
+            'bg': "#1e1e1e", 'display_bg': "#2e2e2e", 
+            'btn_bg': "#404040", 'accent': "#ff9f0a", 
+            'text': "#ffffff", 'dim': "#a0a0a0"
+        }
+        self.fonts = {
+            'main': ('Arial', 18), 'result': ('Arial', 24, "bold"),
+            'expr': ('Arial', 16), 'history': ('Arial', 10),
+            'small': ('Arial', 10) 
+        }
         
-        self.root.configure(bg=self.BG_COLOR)
-        self._create_widgets()
+        self.root.configure(bg=self.colors['bg'])
+        self._setup_ui()
 
-    def _create_widgets(self):
-        self._configure_styles()
-        self._create_displays()
-        self._create_buttons()
-        self._layout_grid()
-
-    # sets up all the ttk styles
-    def _configure_styles(self):
-        style = ttk.Style()
-        style.theme_use('clam')
-
-        # scrollbar style
-        style.configure('Dark.TFrame', background=self.BG_COLOR)
-        style.layout('custom.Horizontal.TScrollbar',
-                     [('Horizontal.Scrollbar.trough', {'children':
-                         [('Horizontal.Scrollbar.thumb', {'expand': '1', 'sticky': 'nswe'})],
-                         'sticky': 'we'})])
-        style.configure('custom.Horizontal.TScrollbar', troughcolor=self.BG_COLOR, borderwidth=0, relief='flat')
-        style.map('custom.Horizontal.TScrollbar', background=[('active', self.OPERATOR_BG_COLOR), ('!active', self.OPERATOR_BG_COLOR)])
-        
-        # removes default macos button border for a flat look
-        style.layout('TButton', [('Button.padding', {'children': [('Button.label', {'sticky': 'nswe'})]})])
-
-        # style for digit buttons
-        style.configure('Digit.TButton', background=self.BUTTON_BG_COLOR, foreground=self.TEXT_COLOR,
-                        font=self.MAIN_FONT, borderwidth=0, padding=[0, 15])
-        style.map('Digit.TButton', background=[('active', self.DISPLAY_BG_COLOR)]) # color when pressed
-
-        # style for operator buttons
-        style.configure('Operator.TButton', background=self.OPERATOR_BG_COLOR, foreground=self.TEXT_COLOR,
-                        font=self.MAIN_FONT, borderwidth=0, padding=[0, 15])
-        style.map('Operator.TButton', background=[('active', '#ffb340')]) # a lighter orange when pressed
-
-    def _create_displays(self):
-        # history display
-        history_frame = tk.Frame(self.root, bg=self.BG_COLOR)
-        history_frame.grid(row=0, column=0, columnspan=4, padx=10, pady=(10,0), sticky="ew")
-        self.history_labels = []
-        for i in range(5):
-            label = tk.Label(history_frame, text="", font=self.HISTORY_FONT,
-                             bg=self.BG_COLOR, fg=self.HISTORY_TEXT_COLOR, anchor="e")
-            label.pack(side="top", fill="x")
-            self.history_labels.append(label)
-
-        # expression display
-        self.expression_display = tk.Entry(self.root, font=self.EXPRESSION_FONT, bd=0, justify="right",
-                                          bg=self.BG_COLOR, fg=self.TEXT_COLOR,
-                                          readonlybackground=self.BG_COLOR, state='readonly',
-                                          insertbackground=self.TEXT_COLOR)
-        self.expression_display.grid(row=1, column=0, columnspan=4, padx=10, pady=(5, 0), sticky="ew")
-
-        # scrollbar
-        scrollbar_frame = ttk.Frame(self.root, style='Dark.TFrame')
-        scrollbar_frame.grid(row=2, column=0, columnspan=4, sticky='ew', padx=10)
-        self.scrollbar = ttk.Scrollbar(scrollbar_frame, orient='horizontal', command=self.expression_display.xview,
-                                       style='custom.Horizontal.TScrollbar')
-        self.expression_display.config(xscrollcommand=self.scrollbar.set)
-
-        # result display
-        self.result_display = tk.Entry(self.root, font=self.RESULT_FONT, bd=0, width=14, justify="right",
-                                     bg=self.DISPLAY_BG_COLOR, fg=self.TEXT_COLOR,
-                                     readonlybackground=self.DISPLAY_BG_COLOR, state='readonly')
-        self.result_display.grid(row=3, column=0, columnspan=4, padx=10, pady=(0, 10), sticky="ew")
-
-    def _create_buttons(self):
-        button_frame = tk.Frame(self.root, bg=self.BG_COLOR)
-        button_frame.grid(row=4, column=0, columnspan=4, sticky="nsew")
-        buttons = [
-            ('(', 1, 0), (')', 1, 1), ('%', 1, 2), ('AC', 1, 3),
-            ('7', 2, 0), ('8', 2, 1), ('9', 2, 2), ('/', 2, 3),
-            ('4', 3, 0), ('5', 3, 1), ('6', 3, 2), ('*', 3, 3),
-            ('1', 4, 0), ('2', 4, 1), ('3', 4, 2), ('-', 4, 3),
-            ('0', 5, 0), ('.', 5, 1), ('=', 5, 2), ('+', 5, 3),
-        ]
-        for (text, row, col) in buttons:
-            # choose the style based on the button text
-            button_style = 'Operator.TButton' if text in '()%/AC*/-+= ' else 'Digit.TButton'
-            command = self.controller.get_button_command(text)
-            
-            # create a ttk.Button with the new style
-            button = ttk.Button(button_frame, text=text, style=button_style, command=command)
-            button.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-
-    def _layout_grid(self):
-        self.root.grid_rowconfigure(0, weight=2)
-        self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_rowconfigure(2, weight=0)
-        self.root.grid_rowconfigure(3, weight=2)
-        self.root.grid_rowconfigure(4, weight=8)
+    def _setup_ui(self):
+        self._style_widgets()
+        self._build_displays()
+        self._build_buttons()
+        # grid weights
+        self.root.grid_rowconfigure(3, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
+        self.btn_frame.grid_rowconfigure(tuple(range(1, 7)), weight=1)
         
-        # make buttons expand to fill space
-        button_frame = None
-        for child in self.root.winfo_children():
-            if isinstance(child, tk.Frame) and not isinstance(child, ttk.Frame):
-                button_frame = child
-                break
-        if button_frame:
-            for i in range(1, 6): button_frame.grid_rowconfigure(i, weight=1)
-            # the fix is here: 'uniform' forces columns to be the same size,
-            # and 'minsize' gives them a specific minimum width to enforce.
-            for i in range(4):
-                button_frame.grid_columnconfigure(i, weight=1, uniform="button_grid", minsize=90)
+        # default to simple
+        self.toggle_sci_mode(False)
 
-    # shrinks font size if text is too long
-    def _fit_font_size(self, widget, text):
-        font_name, default_size, style = self.RESULT_FONT
-        new_font = font.Font(family=font_name, size=default_size, weight=style)
+    def _style_widgets(self):
+        s = ttk.Style()
+        s.theme_use('clam')
+
+        base = {'borderwidth': 0, 'relief': 'flat', 'font': self.fonts['main'], 'padding': [0, 15]}
         
-        while new_font.measure(text) > widget.winfo_width() - 20 and new_font['size'] > 10:
-            new_font.config(size=new_font['size'] - 2)
+        # number keys
+        s.configure('Digit.TButton', background=self.colors['btn_bg'], foreground=self.colors['text'], **base)
+        s.map('Digit.TButton', background=[('active', self.colors['display_bg'])])
+
+        # function keys
+        s.configure('Operator.TButton', background=self.colors['accent'], foreground=self.colors['text'], **base)
+        s.map('Operator.TButton', background=[('active', '#ffb340')])
+
+    def _build_displays(self):
+        # top bar
+        top_bar = tk.Frame(self.root, bg=self.colors['bg'])
+        top_bar.grid(row=0, column=0, columnspan=6, sticky="ew", padx=10, pady=(5, 0))
+
+        # mode toggle
+        self.mode_btn = tk.Label(top_bar, text="SCI", font=self.fonts['small'], 
+                                bg=self.colors['btn_bg'], fg=self.colors['text'], width=4)
+        self.mode_btn.pack(side="right", padx=2)
+        self.mode_btn.bind("<Button-1>", lambda e: self.controller.switch_mode())
+
+        # deg/rad toggle
+        self.deg_switch = tk.Label(top_bar, text="DEG", font=self.fonts['small'],
+                                  bg=self.colors['accent'], fg=self.colors['text'], width=4)
+        self.deg_switch.pack(side="right", padx=2)
+        self.deg_switch.bind("<Button-1>", lambda e: self.controller.toggle_degrees())
+
+        # history stack
+        hist_frame = tk.Frame(top_bar, bg=self.colors['bg'])
+        hist_frame.pack(side="left", fill="x", expand=True)
+        
+        self.hist_lbls = []
+        for _ in range(3):
+            l = tk.Label(hist_frame, text=" ", font=self.fonts['history'], bg=self.colors['bg'], fg=self.colors['dim'], anchor="w")
+            l.pack(side="top", fill="x")
+            self.hist_lbls.append(l)
+
+        # input line
+        self.expr = tk.Entry(self.root, font=self.fonts['expr'], bd=0, justify="right", 
+                            bg=self.colors['bg'], fg=self.colors['text'], 
+                            readonlybackground=self.colors['bg'], state='readonly', insertbackground=self.colors['text'])
+        self.expr.grid(row=1, column=0, columnspan=6, sticky="ew", padx=10, pady=(5,0))
+
+        # result line
+        self.res = tk.Entry(self.root, font=self.fonts['result'], bd=0, justify="right", 
+                           bg=self.colors['display_bg'], fg=self.colors['text'], 
+                           readonlybackground=self.colors['display_bg'], state='readonly')
+        self.res.grid(row=2, column=0, columnspan=6, sticky="ew", padx=10, pady=(0,10))
+
+    def _build_buttons(self):
+        self.btn_frame = tk.Frame(self.root, bg=self.colors['bg'])
+        self.btn_frame.grid(row=3, column=0, columnspan=6, sticky="nsew")
+
+        # button layout
+        btns = [
+            # sci cols
+            ('sin', 1, 0), ('cos', 2, 0), ('tan', 3, 0), ('^', 4, 0), ('pi', 5, 0),
+            ('ln', 1, 1), ('log', 2, 1), ('sqrt', 3, 1), ('STO', 4, 1), ('%', 5, 1),
             
-        widget.config(font=new_font)
+            # simple cols
+            ('(', 1, 2), (')', 1, 3), ('HIST', 1, 4), ('AC', 1, 5),
+            ('7', 2, 2), ('8', 2, 3), ('9', 2, 4), ('/', 2, 5),
+            ('4', 3, 2), ('5', 3, 3), ('6', 3, 4), ('*', 3, 5),
+            ('1', 4, 2), ('2', 4, 3), ('3', 4, 4), ('-', 4, 5),
+            ('0', 5, 2), ('.', 5, 3), ('=', 5, 4), ('+', 5, 5),
+        ]
 
-    # safely updates the text of a widget
-    def _set_display_text(self, widget, text):
-        is_readonly = (widget['state'] == 'readonly')
-        if is_readonly: widget.config(state=tk.NORMAL)
-        
-        if widget == self.result_display:
-            self._fit_font_size(widget, text)
+        self.buttons = {}
+        self.sci_btns = [] 
+
+        for (txt, r, c) in btns:
+            if txt in '0123456789.': style = 'Digit.TButton'
+            else: style = 'Operator.TButton'
+
+            cmd = self.controller.get_button_command(txt)
+            btn = ttk.Button(self.btn_frame, text=txt, style=style, command=cmd)
+            self.buttons[txt] = btn
+            btn.grid(row=r, column=c, padx=2, pady=2, sticky="nsew")
             
-        widget.delete(0, tk.END)
-        widget.insert(0, text)
-        if is_readonly: widget.config(state='readonly')
+            if c < 2: self.sci_btns.append(btn)
 
-    # --- public methods ---
-    def get_expression(self):
-        return self.expression_display.get()
-
-    def update_expression(self, text):
-        self._set_display_text(self.expression_display, text)
-
-    def update_result(self, text):
-        self._set_display_text(self.result_display, text)
-
-    def update_history(self, history_list):
-        display_list = [""] * 5 + history_list
-        display_list = display_list[-5:]
+    def toggle_sci_mode(self, show):
+        self.is_sci = show
+        f = self.btn_frame
         
-        for i, text in enumerate(display_list):
-            self.history_labels[i].config(text=text)
+        if show:
+            self.root.geometry("480x550")
+            for btn in self.sci_btns: btn.grid()
+            # uniform columns
+            for i in range(6): f.grid_columnconfigure(i, weight=1, uniform="btns")
+        else:
+            self.root.geometry("320x550")
+            for btn in self.sci_btns: btn.grid_remove()
+            # collapse sci cols
+            for i in range(2): f.grid_columnconfigure(i, weight=0, uniform="")
+            for i in range(2, 6): f.grid_columnconfigure(i, weight=1, uniform="btns")
+            
+        self.mode_btn.config(text="SIMP" if show else "SCI", bg=self.colors['accent'] if show else self.colors['btn_bg'])
 
-    def bind_global_keys(self, key, func):
-        self.root.bind(key, func)
+    def _set_text(self, w, txt):
+        ro = w['state'] == 'readonly'
+        if ro: w.config(state=tk.NORMAL)
+        
+        if w == self.res:
+            fc = self.fonts['result']
+            f = font.Font(family=fc[0], size=fc[1], weight=fc[2])
+            while f.measure(txt) > w.winfo_width() - 20 and f['size'] > 10:
+                f.config(size=f['size'] - 2)
+            w.config(font=f)
+            
+        w.delete(0, tk.END); w.insert(0, txt)
+        if ro: w.config(state='readonly')
 
-    def unbind_global_keys(self, key):
-        self.root.unbind(key)
+    def open_history_window(self, history_list):
+        top = tk.Toplevel(self.root)
+        top.title("History")
+        top.geometry("300x400")
+        top.configure(bg=self.colors['bg'])
+        
+        txt = tk.Text(top, bg=self.colors['bg'], fg=self.colors['text'], font=self.fonts['history'])
+        txt.pack(fill="both", expand=True)
+        for item in history_list: txt.insert(tk.END, item + "\n")
+        txt.config(state='disabled')
 
-    def bind_edit_keys(self, key, func):
-        self.expression_display.bind(key, func)
+    # getters and setters
+    def get_expression(self): return self.expr.get()
+    def update_expression(self, txt): self._set_text(self.expr, txt)
+    def update_result(self, txt): self._set_text(self.res, txt)
+    
+    def update_history(self, h):
+        for l, t in zip(self.hist_lbls, ([" "]*3 + h)[-3:]): l.config(text=t if t else " ")
 
-    def unbind_edit_keys(self, key):
-        self.expression_display.unbind(key)
+    def update_deg_btn(self, is_deg):
+        self.deg_switch.config(text="DEG" if is_deg else "RAD", bg=self.colors['accent'] if is_deg else "#505050")
 
-    def set_display_state(self, state):
-        self.expression_display.config(state=state)
-
-    def focus_expression(self):
-        self.expression_display.focus_set()
-
-    def focus_root(self):
-        self.root.focus_set()
-
+    def bind_global_keys(self, k, f): self.root.bind(k, f)
+    def unbind_global_keys(self, k): self.root.unbind(k)
+    def bind_edit_keys(self, k, f): self.expr.bind(k, f)
+    def unbind_edit_keys(self, k): self.expr.unbind(k)
+    def get_expression_state(self): return self.expr['state']
+    def set_display_state(self, s): self.expr.config(state=s)
+    def focus_expression(self): self.expr.focus_set()
+    def focus_root(self): self.root.focus_set()
